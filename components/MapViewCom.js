@@ -1,10 +1,10 @@
 import React, { Component } from 'react'
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, TextInput } from "react-native"
-import MapView, { Marker, Callout } from 'react-native-maps';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, TextInput, StatusBar, Alert } from "react-native"
+import MapView, { Marker, Callout, LocalTile } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Entypo } from '@expo/vector-icons';
 import * as Permissions from 'expo-permissions';
-import { Container, Header, Left, Body, Right, Title, Spinner, Button } from 'native-base';
-import * as Font from 'expo-font';
+import { Container, Header, Left, Body, Right, Title, Spinner, Button, Icon } from 'native-base';
 
 export default class MapViewCom extends Component {
     constructor(props) {
@@ -13,7 +13,10 @@ export default class MapViewCom extends Component {
             region: null,
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
-            loaded: false
+            loaded: false,
+            locationToAdress: null,
+            startLocation: "",
+            lastLocation: ""
         }
     }
     async componentDidMount() {
@@ -24,16 +27,22 @@ export default class MapViewCom extends Component {
             });
         }
         let location = await Location.getCurrentPositionAsync({});
+        let locationToAdress = await Location.reverseGeocodeAsync({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+        })
         const region = {
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
         }
-        this.setState({ region });
+        this.setState({ region, locationToAdress });
     }
 
     render() {
+        const { locationToAdress } = this.state
         return (
             <View style={styles.container}>
+
                 <Header style={{ backgroundColor: "#8C86E8" }}>
                     <Body>
                         <Title style={{ color: "white" }}>Map</Title>
@@ -44,57 +53,91 @@ export default class MapViewCom extends Component {
                         <Spinner style={{ marginTop: 150 }} color="#8C86E8" />
                     ) : (
                             <View>
-                                <MapView
+                                <MapView.Animated
                                     initialRegion={{
                                         latitude: this.state.region.latitude,
                                         longitude: this.state.region.longitude,
                                         latitudeDelta: 0.0922,
                                         longitudeDelta: 0.0421
                                     }}
-                                    style={styles.mapStyle}
-                                >
-                                    <Marker
-                                        coordinate={{
-                                            latitude: this.state.region.latitude,
-                                            longitude: this.state.region.longitude
-                                        }}
-                                        title={"Your Location"}
+                                    showsBuildings
+                                    zoomControlEnabled={true}
+                                    style={styles.mapStyle}>
+                                    <Marker coordinate={{
+                                        latitude: this.state.region.latitude,
+                                        longitude: this.state.region.longitude
+                                    }} title={`${locationToAdress[0].city}, ${locationToAdress[0].street}, ${locationToAdress[0].region}`}>
+                                        <Entypo name="location-pin" size={50} color={"#8C86E8"} />
+                                    </Marker>
+                                </MapView.Animated>
+
+                               
+                                <View style={{
+                                    position: 'absolute',
+                                    top: 35,
+                                    alignSelf: "center"
+                                }}>
+                                    <TextInput
+                                        disableFullscreenUI
+                                        onChange={text => this.setState({ startLocation: text })}
+                                        style={styles.inputStyle}
+                                        value={"Your Location"}
+                                        placeholder=" First Location"
+
                                     />
-                                </MapView>
-                                <Callout>
-                                    <View style={{
-                                        justifyContent: "center",
-                                        alignContent: "center",
-                                        alignSelf:"center"
-                                    }}>
-                                        <Button style={styles.findButton}><Text style={{color:"white",fontWeight:"500",fontSize:17,margin:4}}> Find Location </Text></Button>
+                                    <TextInput
+                                        onChange={text => this.setState({ startLocation: text })}
+                                        style={styles.inputStyle}
+                                        value={this.state.startLocation}
+                                        placeholder=" Last Location"
+                                    />
+                                    <Button style={{ backgroundColor: "#8C86E8", justifyContent: "center",marginTop:5, alignSelf: "center", width: 100 }}>
+                                        <Entypo name="location" size={20} color={"white"} />
+                                        <Text style={{ color: "white", fontSize: 20, marginLeft: 5 }}>
+                                            Go
+                                        </Text>
+                                    </Button>
+                                </View>
 
 
-                                    </View>
-                                </Callout>
+                                <View style={{
+                                    position: 'absolute',
+                                    bottom: 120,
+                                    alignSelf: "center"
+                                }}>
+                                    <Button style={{ backgroundColor: "#8C86E8", justifyContent: "center", alignContent: "center", width: 250 }}>
+                                        <Entypo name="location" size={20} color={"white"} />
+                                        <Text style={{ color: "white", fontSize: 20, marginLeft: 5 }}>
+                                            Find
+                                        </Text>
+                                    </Button>
+                                </View>
                             </View>
                         )
                 }
+                {/* <CustomCollout /> */}
             </View>
         )
     }
 }
 const styles = StyleSheet.create({
     container: {
-        display: "flex",
-        height: "100%",
-        flex: 1
+        flex: 1,
+        height: "100%"
     },
     mapStyle: {
-        width: Dimensions.get("window").width,
         height: Dimensions.get("window").height,
-        justifyContent: "center",
-        alignContent: "center",
+        width: Dimensions.get("window").width
     },
-
-    findButton: {
-       borderRadius:15,
-       backgroundColor:"#8C86E8",
-       alignSelf:"center"
+    inputStyle: {
+        height: 40,
+        width: 250,
+        borderRadius: 15,
+        borderColor: '#8C86E8',
+        borderWidth: 1,
+        marginTop: 5,
+        backgroundColor:"white"
     }
+
+
 })

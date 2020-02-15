@@ -31,7 +31,7 @@ class App extends React.Component {
   render() {
     return (
       <NavigationContainer>
-        <StatusBar backgroundColor={"blue"} />
+        <StatusBar barStyle={"light-content"} />
         <Tab.Navigator screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
