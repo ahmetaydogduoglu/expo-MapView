@@ -2,9 +2,9 @@ import React, { Component } from 'react'
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity, TextInput, StatusBar, Alert } from "react-native"
 import MapView, { Marker, Callout, LocalTile } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { Entypo } from '@expo/vector-icons';
+import { Entypo, MaterialIcons } from '@expo/vector-icons';
 import * as Permissions from 'expo-permissions';
-import { Container, Header, Left, Body, Right, Title, Spinner, Button, Icon } from 'native-base';
+import { Container, Header, Left, Body, Right, Title, Spinner, Button, Icon, Form } from 'native-base';
 
 export default class MapViewCom extends Component {
     constructor(props) {
@@ -16,7 +16,8 @@ export default class MapViewCom extends Component {
             loaded: false,
             locationToAdress: null,
             startLocation: "",
-            lastLocation: ""
+            lastLocation: "",
+            lastRegion: null
         }
     }
     async componentDidMount() {
@@ -36,6 +37,21 @@ export default class MapViewCom extends Component {
             longitude: location.coords.longitude,
         }
         this.setState({ region, locationToAdress });
+    }
+
+    onDirectionCreate = async () => {
+        if (this.state.lastLocation.trim().length === 0) {
+            Alert.alert("Please Enter Target.")
+        } else {
+            const targetLocation = await Location.geocodeAsync(this.state.lastLocation)
+            const region = {
+                latitude: targetLocation[0].latitude,
+                longitude: targetLocation[0].longitude
+            }
+            this.setState({
+                lastRegion: region
+            })
+        }
     }
 
     render() {
@@ -69,9 +85,20 @@ export default class MapViewCom extends Component {
                                     }} title={`${locationToAdress[0].city}, ${locationToAdress[0].street}, ${locationToAdress[0].region}`}>
                                         <Entypo name="location-pin" size={50} color={"#8C86E8"} />
                                     </Marker>
-                                </MapView.Animated>
+                                    {
+                                        this.state.lastRegion !== null ? (
+                                            <Marker coordinate={{
+                                                latitude: this.state.lastRegion.latitude,
+                                                longitude: this.state.lastRegion.longitude
+                                            }} title={`${locationToAdress[0].city}, ${locationToAdress[0].street}, ${locationToAdress[0].region}`}>
+                                                <Entypo name="location-pin" size={50} color={"#8C86E8"} />
+                                            </Marker>
+                                        ) : (
+                                                null
+                                            )
+                                    }
 
-                               
+                                </MapView.Animated>
                                 <View style={{
                                     position: 'absolute',
                                     top: 35,
@@ -79,27 +106,28 @@ export default class MapViewCom extends Component {
                                 }}>
                                     <TextInput
                                         disableFullscreenUI
-                                        onChange={text => this.setState({ startLocation: text })}
+                                        onChangeText={text => this.setState({ startLocation: text })}
                                         style={styles.inputStyle}
                                         value={"Your Location"}
                                         placeholder=" First Location"
 
                                     />
                                     <TextInput
-                                        onChange={text => this.setState({ startLocation: text })}
+                                        onChangeText={text => this.setState({ lastLocation: text })}
                                         style={styles.inputStyle}
-                                        value={this.state.startLocation}
+                                        value={this.state.lastLocation}
                                         placeholder=" Last Location"
                                     />
-                                    <Button style={{ backgroundColor: "#8C86E8", justifyContent: "center",marginTop:5, alignSelf: "center", width: 100 }}>
-                                        <Entypo name="location" size={20} color={"white"} />
+                                    <Button
+                                        onPress={this.onDirectionCreate}
+                                        style={{ backgroundColor: "#8C86E8", justifyContent: "center", marginTop: 5, alignSelf: "center", width: 100 }}>
+
+                                        <MaterialIcons name="directions" size={25} color={"white"} />
                                         <Text style={{ color: "white", fontSize: 20, marginLeft: 5 }}>
                                             Go
                                         </Text>
                                     </Button>
                                 </View>
-
-
                                 <View style={{
                                     position: 'absolute',
                                     bottom: 120,
@@ -136,7 +164,8 @@ const styles = StyleSheet.create({
         borderColor: '#8C86E8',
         borderWidth: 1,
         marginTop: 5,
-        backgroundColor:"white"
+        opacity: .7,
+        backgroundColor: "white"
     }
 
 
